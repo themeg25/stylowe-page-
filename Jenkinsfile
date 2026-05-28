@@ -26,7 +26,7 @@ pipeline {
             }
         }
 
-        stage('Upload Build to EC2') {
+        stage('Upload Build Files') {
             steps {
                 sshPublisher(
                     publishers: [
@@ -58,7 +58,6 @@ pipeline {
                                         sudo rm -rf /usr/share/nginx/html/*
                                         sudo cp -r /home/ec2-user/stylo-build/* /usr/share/nginx/html/
                                         sudo chmod -R 755 /usr/share/nginx/html
-                                        sudo chown -R nginx:nginx /usr/share/nginx/html
                                         sudo systemctl restart nginx
                                     '''
                                 )
@@ -74,6 +73,7 @@ pipeline {
         success {
             echo 'Deployment Successful'
         }
+
         failure {
             echo 'Deployment Failed'
         }
