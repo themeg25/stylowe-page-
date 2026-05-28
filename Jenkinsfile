@@ -26,26 +26,7 @@ pipeline {
             }
         }
 
-        stage('Clean Old Frontend Files') {
-            steps {
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'my-ec2',
-                            transfers: [
-                                sshTransfer(
-                                    execCommand: '''
-                                    sudo rm -rf /usr/share/nginx/html/*
-                                    '''
-                                )
-                            ]
-                        )
-                    ]
-                )
-            }
-        }
-
-        stage('Upload New Frontend Files') {
+        stage('Upload Build Files to EC2') {
             steps {
                 sshPublisher(
                     publishers: [
@@ -55,7 +36,7 @@ pipeline {
                                 sshTransfer(
                                     sourceFiles: 'build/**',
                                     removePrefix: 'build',
-                                    remoteDirectory: '/usr/share/nginx/html'
+                                    remoteDirectory: '/tmp/stylo-build'
                                 )
                             ]
                         )
@@ -64,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('Restart Nginx') {
+        stage('Deploy to Nginx') {
             steps {
                 sshPublisher(
                     publishers: [
@@ -73,8 +54,10 @@ pipeline {
                             transfers: [
                                 sshTransfer(
                                     execCommand: '''
-                                    sudo chmod -R 755 /usr/share/nginx/html
-                                    sudo systemctl restart nginx
+                                        sudo rm -rf /usr/share/nginx/html/*
+                                        sudo cp -r /tmp/stylo-build/* /usr/share/nginx/html/
+                                        sudo chmod -R 755 /usr/share/nginx/html
+                                        sudo systemctl restart nginx
                                     '''
                                 )
                             ]
@@ -82,6 +65,15 @@ pipeline {
                     ]
                 )
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment Successful'
+        }
+        failure {
+            echo 'Deployment Failed'
         }
     }
 }
