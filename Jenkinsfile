@@ -28,9 +28,11 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                bat '''
-                scp -i C:\\Users\\Admin\\Downloads\\hari.pem -o StrictHostKeyChecking=no -r build/* ec2-user@32.236.96.171:/usr/share/nginx/html/
-                '''
+                sshagent(['ec2-hari-key']) {
+                    bat '''
+                    scp -o StrictHostKeyChecking=no -r build/* ec2-user@32.236.96.171:/usr/share/nginx/html/
+                    '''
+                }
             }
         }
     }
