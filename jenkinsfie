@@ -7,10 +7,10 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
                 git branch: 'main',
-                url: 'https://github.com/themeg25/stylowe-page-.git'
+                url: 'https://github.com/themeg25/Poc-Project.git'
             }
         }
 
@@ -26,15 +26,22 @@ pipeline {
             }
         }
 
+        stage('Deploy to EC2') {
+            steps {
+                bat '''
+                scp -i C:\\Users\\Admin\\Downloads\\hari.pem -o StrictHostKeyChecking=no -r build/* ec2-user@32.236.96.171:/usr/share/nginx/html/
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo 'Build Successful'
+            echo 'Deployment Successful'
         }
 
         failure {
-            echo 'Build Failed'
+            echo 'Deployment Failed'
         }
     }
 }
