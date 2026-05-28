@@ -7,10 +7,10 @@ pipeline {
 
     stages {
 
-        stage('Clone Repository') {
+        stage('Clone Code') {
             steps {
                 git branch: 'main',
-                url: 'https://github.com/themeg25/Poc-Project.git'
+                url: 'https://github.com/themeg25/stylowe-page-.git'
             }
         }
 
@@ -20,28 +20,68 @@ pipeline {
             }
         }
 
-        stage('Build React App') {
+        stage('Build Frontend') {
             steps {
                 bat 'npm run build'
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Clean Old Frontend Files') {
             steps {
-                bat '''
-                scp -i C:\\jenkins-key\\hari.pem -o StrictHostKeyChecking=no -r build/* ec2-user@32.236.96.171:/usr/share/nginx/html/
-                '''
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'my-ec2',
+                            transfers: [
+                                sshTransfer(
+                                    execCommand: '''
+                                    sudo rm -rf /usr/share/nginx/html/*
+                                    '''
+                                )
+                            ]
+                        )
+                    ]
+                )
             }
         }
-    }
 
-    post {
-        success {
-            echo 'Deployment Successful'
+        stage('Upload New Frontend Files') {
+            steps {
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'my-ec2',
+                            transfers: [
+                                sshTransfer(
+                                    sourceFiles: 'build/**',
+                                    removePrefix: 'build',
+                                    remoteDirectory: '/usr/share/nginx/html'
+                                )
+                            ]
+                        )
+                    ]
+                )
+            }
         }
 
-        failure {
-            echo 'Deployment Failed'
+        stage('Restart Nginx') {
+            steps {
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'my-ec2',
+                            transfers: [
+                                sshTransfer(
+                                    execCommand: '''
+                                    sudo chmod -R 755 /usr/share/nginx/html
+                                    sudo systemctl restart nginx
+                                    '''
+                                )
+                            ]
+                        )
+                    ]
+                )
+            }
         }
     }
 }
