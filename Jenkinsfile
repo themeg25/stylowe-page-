@@ -29,10 +29,7 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 bat '''
-                icacls C:\\Users\\Admin\\Downloads\\hari.pem /inheritance:r
-                icacls C:\\Users\\Admin\\Downloads\\hari.pem /grant:r %USERNAME%:R
-
-                scp -i C:\\Users\\Admin\\Downloads\\hari.pem -o StrictHostKeyChecking=no -r build\\* ec2-user@32.236.96.171:/usr/share/nginx/html/
+                scp -i "C:\\Program Files\\Jenkins\\keys\\hari.pem" -o StrictHostKeyChecking=no -r build\\* ec2-user@32.236.96.171:/usr/share/nginx/html/
                 '''
             }
         }
