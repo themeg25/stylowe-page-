@@ -20,13 +20,13 @@ pipeline {
             }
         }
 
-        stage('Build Frontend') {
+        stage('Build React App') {
             steps {
                 bat 'npm run build'
             }
         }
 
-        stage('Upload Build Files to EC2') {
+        stage('Upload Build to EC2') {
             steps {
                 sshPublisher(
                     publishers: [
@@ -36,7 +36,7 @@ pipeline {
                                 sshTransfer(
                                     sourceFiles: 'build/**/*',
                                     removePrefix: 'build',
-                                    remoteDirectory: '/home/ec2-user/stylo-build'
+                                    remoteDirectory: 'stylo-build'
                                 )
                             ]
                         )
@@ -58,6 +58,7 @@ pipeline {
                                         sudo rm -rf /usr/share/nginx/html/*
                                         sudo cp -r /home/ec2-user/stylo-build/* /usr/share/nginx/html/
                                         sudo chmod -R 755 /usr/share/nginx/html
+                                        sudo chown -R nginx:nginx /usr/share/nginx/html
                                         sudo systemctl restart nginx
                                     '''
                                 )
