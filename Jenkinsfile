@@ -34,9 +34,9 @@ pipeline {
                             configName: 'my-ec2',
                             transfers: [
                                 sshTransfer(
-                                    sourceFiles: 'build/**',
-                                    removePrefix: 'build',
-                                    remoteDirectory: 'stylo-build'
+                                    sourceFiles: 'build/**/*',
+                                    remoteDirectory: '/home/ec2-user/stylo-build',
+                                    cleanRemote: false
                                 )
                             ]
                         )
@@ -55,8 +55,9 @@ pipeline {
                                 sshTransfer(
                                     execCommand: '''
                                         sudo rm -rf /usr/share/nginx/html/*
-                                        sudo cp -r /home/ec2-user/stylo-build/* /usr/share/nginx/html/
+                                        sudo cp -r /home/ec2-user/stylo-build/build/* /usr/share/nginx/html/
                                         sudo chmod -R 755 /usr/share/nginx/html
+                                        sudo chown -R nginx:nginx /usr/share/nginx/html
                                         sudo systemctl restart nginx
                                     '''
                                 )
