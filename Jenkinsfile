@@ -36,7 +36,7 @@ pipeline {
                                 sshTransfer(
                                     sourceFiles: 'build/**',
                                     removePrefix: 'build',
-                                    remoteDirectory: '/tmp/stylo-build'
+                                    remoteDirectory: 'stylo-build'
                                 )
                             ]
                         )
