@@ -26,7 +26,7 @@ pipeline {
             }
         }
 
-        stage('Upload Build to EC2') {
+        stage('Deploy to EC2') {
             steps {
                 sshPublisher(
                     publishers: [
@@ -34,31 +34,12 @@ pipeline {
                             configName: 'my-ec2',
                             transfers: [
                                 sshTransfer(
-                                    sourceFiles: 'build/**/*',
+                                    sourceFiles: 'build/**',
                                     removePrefix: 'build',
-                                    remoteDirectory: 'stylo-build',
-                                    cleanRemote: true
-                                )
-                            ]
-                        )
-                    ]
-                )
-            }
-        }
-
-        stage('Deploy to Nginx') {
-            steps {
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'my-ec2',
-                            transfers: [
-                                sshTransfer(
+                                    remoteDirectory: '/tmp/stylo-build',
                                     execCommand: '''
                                         sudo mkdir -p /usr/share/nginx/html
-                                        sudo rm -rf /usr/share/nginx/html/*
-                                        sudo cp -r /home/ec2-user/stylo-build/* /usr/share/nginx/html/
-                                        sudo chmod -R 755 /usr/share/nginx/html
+                                        sudo cp -r /tmp/stylo-build/* /usr/share/nginx/html/
                                         sudo systemctl restart nginx
                                     '''
                                 )
@@ -67,15 +48,6 @@ pipeline {
                     ]
                 )
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Deployment Successful'
-        }
-        failure {
-            echo 'Deployment Failed'
         }
     }
 }
