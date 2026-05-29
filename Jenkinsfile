@@ -26,7 +26,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Upload Build to EC2') {
             steps {
                 sshPublisher(
                     publishers: [
@@ -36,11 +36,27 @@ pipeline {
                                 sshTransfer(
                                     sourceFiles: 'build/**',
                                     removePrefix: 'build',
-                                    remoteDirectory: '/tmp/stylo-build',
+                                    remoteDirectory: 'stylo-build'
+                                )
+                            ]
+                        )
+                    ]
+                )
+            }
+        }
+
+        stage('Deploy to Nginx') {
+            steps {
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'my-ec2',
+                            transfers: [
+                                sshTransfer(
                                     execCommand: '''
-                                        sudo mkdir -p /usr/share/nginx/html
-                                        sudo cp -r /tmp/stylo-build/* /usr/share/nginx/html/
-                                        sudo systemctl restart nginx
+                                    mkdir -p /tmp/stylo-build
+                                    sudo cp -r /tmp/stylo-build/* /usr/share/nginx/html/
+                                    sudo systemctl restart nginx
                                     '''
                                 )
                             ]
