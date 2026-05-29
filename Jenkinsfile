@@ -1,4 +1,3 @@
-```groovy
 pipeline {
     agent any
 
@@ -55,13 +54,10 @@ pipeline {
                             transfers: [
                                 sshTransfer(
                                     execCommand: '''
-                                    if [ ! -d /tmp/stylo-build ]; then
-                                      mkdir -p /tmp/stylo-build
-                                    fi
-
-                                    sudo rm -rf /usr/share/nginx/html/*
-                                    sudo cp -r /tmp/stylo-build/* /usr/share/nginx/html/
-                                    sudo systemctl restart nginx
+                                        mkdir -p /tmp/stylo-build
+                                        sudo rm -rf /usr/share/nginx/html/*
+                                        sudo cp -r /tmp/stylo-build/* /usr/share/nginx/html/
+                                        sudo systemctl restart nginx
                                     '''
                                 )
                             ]
@@ -72,4 +68,3 @@ pipeline {
         }
     }
 }
-```
