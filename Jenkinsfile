@@ -1,3 +1,4 @@
+```groovy
 pipeline {
     agent any
 
@@ -36,7 +37,7 @@ pipeline {
                                 sshTransfer(
                                     sourceFiles: 'build/**',
                                     removePrefix: 'build',
-                                    remoteDirectory: 'stylo-build'
+                                    remoteDirectory: '/tmp/stylo-build'
                                 )
                             ]
                         )
@@ -54,7 +55,11 @@ pipeline {
                             transfers: [
                                 sshTransfer(
                                     execCommand: '''
-                                    mkdir -p /tmp/stylo-build
+                                    if [ ! -d /tmp/stylo-build ]; then
+                                      mkdir -p /tmp/stylo-build
+                                    fi
+
+                                    sudo rm -rf /usr/share/nginx/html/*
                                     sudo cp -r /tmp/stylo-build/* /usr/share/nginx/html/
                                     sudo systemctl restart nginx
                                     '''
@@ -67,3 +72,4 @@ pipeline {
         }
     }
 }
+```
