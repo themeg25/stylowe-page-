@@ -1,70 +1,65 @@
+```groovy
 pipeline {
     agent any
 
-    tools {
-        nodejs 'NodeJS'
+    environment {
+        BUCKET_NAME = 'hunhunhun'
+        EC2_HOST = '3.27.173.54'
+        AWS_REGION = 'ap-southeast-2'
+        APP_NAME = 'stylowe-page'
     }
 
     stages {
 
-        stage('Clone Code') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main',
                 url: 'https://github.com/themeg25/stylowe-page-.git'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Build') {
             steps {
-                bat 'npm install'
+                sh '''
+                    npm install
+                    npm run build
+                    tar -czf build.tar.gz build/
+                '''
             }
         }
 
-        stage('Build React App') {
+        stage('Upload Build to S3') {
             steps {
-                bat 'npm run build'
+                sh '''
+                    aws s3 cp build.tar.gz s3://hunhunhun/ --region ap-southeast-2
+                '''
             }
         }
 
-        stage('Upload Build to EC2') {
+        stage('Deploy to EC2') {
             steps {
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'my-ec2',
-                            transfers: [
-                                sshTransfer(
-                                    sourceFiles: 'build/**',
-                                    removePrefix: 'build',
-                                    remoteDirectory: '/tmp/stylo-build'
-                                )
-                            ]
-                        )
-                    ]
-                )
-            }
-        }
-
-        stage('Deploy to Nginx') {
-            steps {
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'my-ec2',
-                            transfers: [
-                                sshTransfer(
-                                    execCommand: '''
-                                        mkdir -p /tmp/stylo-build
-                                        sudo rm -rf /usr/share/nginx/html/*
-                                        sudo cp -r /tmp/stylo-build/* /usr/share/nginx/html/
-                                        sudo systemctl restart nginx
-                                    '''
-                                )
-                            ]
-                        )
-                    ]
-                )
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ec2-user@3.27.173.54 "
+                        aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/ --region ap-southeast-2 &&
+                        sudo rm -rf /var/www/html/* &&
+                        sudo tar -xzf /home/ec2-user/build.tar.gz -C /var/www/html/ &&
+                        sudo systemctl restart nginx
+                        "
+                    '''
+                }
             }
         }
     }
+
+    post {
+        success {
+            echo 'Deployment Successful'
+        }
+
+        failure {
+            echo 'Deployment Failed'
+        }
+    }
 }
+```
