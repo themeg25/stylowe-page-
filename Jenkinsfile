@@ -51,15 +51,13 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                sshagent(['ec2-ssh-key']) {
-                    bat '''
-                    ssh -o StrictHostKeyChecking=no ec2-user@3.27.173.54 ^
-                    "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && ^
-                    sudo rm -rf /var/www/html/* && ^
-                    sudo tar -xzf /home/ec2-user/build.tar.gz -C /var/www/html/ && ^
-                    sudo systemctl restart nginx"
-                    '''
-                }
+                bat '''
+                ssh -i C:\\Users\\Admin\\Downloads\\Madhan.pem -o StrictHostKeyChecking=no ec2-user@3.27.173.54 ^
+                "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && ^
+                sudo rm -rf /var/www/html/* && ^
+                sudo tar -xzf /home/ec2-user/build.tar.gz -C /var/www/html/ && ^
+                sudo systemctl restart nginx"
+                '''
             }
         }
     }
