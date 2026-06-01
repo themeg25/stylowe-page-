@@ -52,11 +52,7 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 bat '''
-                ssh -i C:\\Users\\Admin\\Downloads\\Madhan.pem -o StrictHostKeyChecking=no ec2-user@3.27.173.54 ^
-                "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && ^
-                sudo rm -rf /var/www/html/* && ^
-                sudo tar -xzf /home/ec2-user/build.tar.gz -C /var/www/html/ && ^
-                sudo systemctl restart nginx"
+                ssh -i C:\\jenkins-key\\Madhan.pem -o StrictHostKeyChecking=no ec2-user@3.27.173.54 "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && tar -xzf /home/ec2-user/build.tar.gz -C /home/ec2-user && sudo cp -r /home/ec2-user/build/* /usr/share/nginx/html/ && sudo systemctl restart nginx"
                 '''
             }
         }
