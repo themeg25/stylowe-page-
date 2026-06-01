@@ -1,76 +1,45 @@
 pipeline {
     agent any
 
-    environment {
-        BUCKET_NAME = 'hunhunhun'
-        AWS_REGION = 'ap-southeast-2'
-        EC2_HOST = '3.27.78.113'
-        PEM_FILE = 'C:\\Users\\Admin\\Downloads\\kasva.pem'
-    }
-
     stages {
 
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/themeg25/stylowe-page-.git'
+                git 'https://github.com/themeg25/stylowe-page-.git'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install') {
             steps {
                 bat 'npm install'
             }
         }
 
-        stage('Build Application') {
+        stage('Build') {
             steps {
                 bat 'npm run build'
             }
         }
 
-        stage('Create Archive') {
+        stage('Deploy to EC2') {
             steps {
-                bat 'tar -czf build.tar.gz build'
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'ec2-server',
+                            transfers: [
+                                sshTransfer(
+                                    sourceFiles: 'build/**',
+                                    removePrefix: 'build',
+                                    remoteDirectory: '/usr/share/nginx/html'
+                                )
+                            ],
+                            execCommand: 'sudo systemctl restart nginx',
+                            verbose: true
+                        )
+                    ]
+                )
             }
-        }
-
-        stage('Upload To S3') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: '083141433743',
-                    usernameVariable: 'AWS_ACCESS_KEY_ID',
-                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                )]) {
-                    bat '''
-                    set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
-                    set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
-                    aws s3 cp build.tar.gz s3://hunhunhun/build.tar.gz --region ap-southeast-2
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy To EC2') {
-            steps {
-                bat '''
-                ssh -i "%PEM_FILE%" -o StrictHostKeyChecking=no ec2-user@%EC2_HOST% ^
-                "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && \
-                mkdir -p /home/ec2-user/app && \
-                tar -xzf /home/ec2-user/build.tar.gz -C /home/ec2-user/app && \
-                sudo cp -r /home/ec2-user/app/build/* /usr/share/nginx/html/ && \
-                sudo systemctl restart nginx"
-                '''
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Deployment Successful'
-        }
-
-        failure {
-            echo 'Deployment Failed'
         }
     }
 }
