@@ -1,49 +1,50 @@
 pipeline {
     agent any
 
-    stages {
-
-        stage('Build React App') {
-            steps {
-                bat 'npm install'
-                bat 'npm run build'
-            }
-        }
-
-        stage('Deploy To EC2') {
-            steps {
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'ec2-server',
-                            transfers: [
-                                sshTransfer(
-                                    sourceFiles: 'build/**',
-                                    removePrefix: 'build',
-                                    remoteDirectory: '/usr/share/nginx/html'
-                                )
-                            ],
-                            execCommand: '''
-                                sudo chown -R ec2-user:ec2-user /usr/share/nginx/html
-                                sudo cp -r /home/ec2-user/usr/share/nginx/html/* /usr/share/nginx/html/ || true
-                                sudo systemctl restart nginx
-                            ''',
-                            verbose: true
-                        )
-                    ]
-                )
-            }
-        }
-
+    environment {
+        EC2_HOST = '3.27.78.113'
+        EC2_USER = 'ec2-user'
+        SSH_KEY_ID = 'ec2-ssh-key'
     }
 
-    post {
-        success {
-            echo 'Deployment Successful'
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                url: 'https://github.com/themeg25/stylowe-page-.git'
+            }
         }
 
-        failure {
-            echo 'Deployment Failed'
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+
+        stage('Deploy to EC2') {
+            steps {
+                sshagent(credentials: ['ec2-ssh-key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
+                            sudo rm -rf /usr/share/nginx/html/*
+                        "
+
+                        scp -o StrictHostKeyChecking=no -r build/* $EC2_USER@$EC2_HOST:/tmp/
+
+                        ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
+                            sudo cp -r /tmp/* /usr/share/nginx/html/ &&
+                            sudo systemctl restart nginx
+                        "
+                    '''
+                }
+            }
         }
     }
 }
