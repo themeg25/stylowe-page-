@@ -5,6 +5,7 @@ pipeline {
         BUCKET_NAME = 'hunhunhun'
         AWS_REGION = 'ap-southeast-2'
         EC2_HOST = '3.27.78.113'
+        PEM_FILE = 'C:\\Users\\Admin\\Downloads\\kasva.pem'
     }
 
     stages {
@@ -15,25 +16,25 @@ pipeline {
             }
         }
 
-        stage('Install') {
+        stage('Install Dependencies') {
             steps {
                 bat 'npm install'
             }
         }
 
-        stage('Build') {
+        stage('Build Application') {
             steps {
                 bat 'npm run build'
             }
         }
 
-        stage('Archive') {
+        stage('Create Archive') {
             steps {
                 bat 'tar -czf build.tar.gz build'
             }
         }
 
-        stage('Upload to S3') {
+        stage('Upload To S3') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: '083141433743',
@@ -49,13 +50,16 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy To EC2') {
             steps {
-                sshagent(['ec2-ssh-key']) {
-                    bat '''
-                    ssh -o StrictHostKeyChecking=no ec2-user@3.27.78.113 "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && mkdir -p /home/ec2-user/app && tar -xzf /home/ec2-user/build.tar.gz -C /home/ec2-user/app && sudo cp -r /home/ec2-user/app/build/* /usr/share/nginx/html/ && sudo systemctl restart nginx"
-                    '''
-                }
+                bat '''
+                ssh -i "%PEM_FILE%" -o StrictHostKeyChecking=no ec2-user@%EC2_HOST% ^
+                "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && \
+                mkdir -p /home/ec2-user/app && \
+                tar -xzf /home/ec2-user/build.tar.gz -C /home/ec2-user/app && \
+                sudo cp -r /home/ec2-user/app/build/* /usr/share/nginx/html/ && \
+                sudo systemctl restart nginx"
+                '''
             }
         }
     }
@@ -64,6 +68,7 @@ pipeline {
         success {
             echo 'Deployment Successful'
         }
+
         failure {
             echo 'Deployment Failed'
         }
