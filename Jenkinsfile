@@ -1,7 +1,6 @@
 pipeline {
 agent any
 
-```
 environment {
     BUCKET_NAME = 'hunhunhun'
     EC2_HOST = '3.27.173.54'
@@ -16,21 +15,21 @@ stages {
         }
     }
 
-    stage('Install Dependencies') {
+    stage('Install') {
         steps {
             sh 'npm install'
         }
     }
 
-    stage('Build Application') {
+    stage('Build') {
         steps {
             sh 'npm run build'
         }
     }
 
-    stage('Create Archive') {
+    stage('Archive') {
         steps {
-            sh 'tar -czf build.tar.gz build/'
+            sh 'tar -czf build.tar.gz build'
         }
     }
 
@@ -45,9 +44,9 @@ stages {
             sshagent(['ec2-ssh-key']) {
                 sh '''
                 ssh -o StrictHostKeyChecking=no ec2-user@3.27.173.54 "
-                aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 &&
-                sudo rm -rf /var/www/html/* &&
-                sudo tar -xzf /home/ec2-user/build.tar.gz -C /var/www/html/ &&
+                aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2
+                sudo rm -rf /var/www/html/*
+                sudo tar -xzf /home/ec2-user/build.tar.gz -C /var/www/html/
                 sudo systemctl restart nginx
                 "
                 '''
@@ -58,13 +57,11 @@ stages {
 
 post {
     success {
-        echo 'Deployment completed successfully'
+        echo 'Deployment Successful'
     }
-
     failure {
-        echo 'Build or deployment failed'
+        echo 'Deployment Failed'
     }
 }
-```
 
 }
