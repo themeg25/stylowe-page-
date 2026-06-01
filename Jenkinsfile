@@ -11,23 +11,23 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/themeg25/stylowe-page-.git', branch: 'main'
+                git branch: 'main', url: 'https://github.com/themeg25/stylowe-page-.git'
             }
         }
 
-        stage('Install') {
+        stage('Install Dependencies') {
             steps {
                 bat 'npm install'
             }
         }
 
-        stage('Build') {
+        stage('Build Application') {
             steps {
                 bat 'npm run build'
             }
         }
 
-        stage('Archive') {
+        stage('Create Archive') {
             steps {
                 bat 'tar -czf build.tar.gz build'
             }
@@ -52,7 +52,7 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 bat '''
-                ssh -i C:\\jenkins-key\\Madhan.pem -o StrictHostKeyChecking=no ec2-user@3.27.173.54 "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && tar -xzf /home/ec2-user/build.tar.gz -C /home/ec2-user && sudo cp -r /home/ec2-user/build/* /usr/share/nginx/html/ && sudo systemctl restart nginx"
+                ssh -i C:\\jenkins-key\\Madhan.pem -o StrictHostKeyChecking=no ec2-user@3.27.173.54 "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && mkdir -p /home/ec2-user/app && tar -xzf /home/ec2-user/build.tar.gz -C /home/ec2-user/app && sudo cp -r /home/ec2-user/app/build/* /usr/share/nginx/html/ && sudo systemctl restart nginx"
                 '''
             }
         }
