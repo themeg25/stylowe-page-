@@ -3,25 +3,14 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/themeg25/stylowe-page-.git'
-            }
-        }
-
-        stage('Install') {
+        stage('Build React App') {
             steps {
                 bat 'npm install'
-            }
-        }
-
-        stage('Build') {
-            steps {
                 bat 'npm run build'
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy To EC2') {
             steps {
                 sshPublisher(
                     publishers: [
@@ -34,12 +23,27 @@ pipeline {
                                     remoteDirectory: '/usr/share/nginx/html'
                                 )
                             ],
-                            execCommand: 'sudo systemctl restart nginx',
+                            execCommand: '''
+                                sudo chown -R ec2-user:ec2-user /usr/share/nginx/html
+                                sudo cp -r /home/ec2-user/usr/share/nginx/html/* /usr/share/nginx/html/ || true
+                                sudo systemctl restart nginx
+                            ''',
                             verbose: true
                         )
                     ]
                 )
             }
+        }
+
+    }
+
+    post {
+        success {
+            echo 'Deployment Successful'
+        }
+
+        failure {
+            echo 'Deployment Failed'
         }
     }
 }
