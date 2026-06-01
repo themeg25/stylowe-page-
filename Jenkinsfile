@@ -2,9 +2,8 @@ pipeline {
     agent any
 
     environment {
-        EC2_HOST = '3.27.78.113'
-        EC2_USER = 'ec2-user'
-        SSH_KEY_ID = 'ec2-ssh-key'
+        EC2_IP = '3.27.78.113'
+        PEM_KEY = 'C:\\Users\\Admin\\Downloads\\kasva.pem'
     }
 
     stages {
@@ -18,32 +17,27 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                bat 'npm install'
             }
         }
 
         stage('Build') {
             steps {
-                sh 'npm run build'
+                bat 'npm run build'
             }
         }
 
         stage('Deploy to EC2') {
             steps {
-                sshagent(credentials: ['ec2-ssh-key']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
-                            sudo rm -rf /usr/share/nginx/html/*
-                        "
+                bat '''
+                scp -i "%PEM_KEY%" -r build/* ec2-user@%EC2_IP%:/home/ec2-user/build/
 
-                        scp -o StrictHostKeyChecking=no -r build/* $EC2_USER@$EC2_HOST:/tmp/
+                ssh -i "%PEM_KEY%" -o StrictHostKeyChecking=no ec2-user@%EC2_IP% "sudo rm -rf /usr/share/nginx/html/*"
 
-                        ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
-                            sudo cp -r /tmp/* /usr/share/nginx/html/ &&
-                            sudo systemctl restart nginx
-                        "
-                    '''
-                }
+                ssh -i "%PEM_KEY%" -o StrictHostKeyChecking=no ec2-user@%EC2_IP% "sudo cp -r /home/ec2-user/build/* /usr/share/nginx/html/"
+
+                ssh -i "%PEM_KEY%" -o StrictHostKeyChecking=no ec2-user@%EC2_IP% "sudo systemctl restart nginx"
+                '''
             }
         }
     }
