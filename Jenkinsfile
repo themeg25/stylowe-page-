@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        EC2_IP = '3.27.78.113'
-        PEM_KEY = 'C:\\Users\\Admin\\Downloads\\kasva.pem'
-    }
-
     stages {
 
         stage('Checkout') {
@@ -15,7 +10,7 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install') {
             steps {
                 bat 'npm install'
             }
@@ -29,15 +24,25 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                bat '''
-                scp -i "%PEM_KEY%" -r build/* ec2-user@%EC2_IP%:/home/ec2-user/build/
-
-                ssh -i "%PEM_KEY%" -o StrictHostKeyChecking=no ec2-user@%EC2_IP% "sudo rm -rf /usr/share/nginx/html/*"
-
-                ssh -i "%PEM_KEY%" -o StrictHostKeyChecking=no ec2-user@%EC2_IP% "sudo cp -r /home/ec2-user/build/* /usr/share/nginx/html/"
-
-                ssh -i "%PEM_KEY%" -o StrictHostKeyChecking=no ec2-user@%EC2_IP% "sudo systemctl restart nginx"
-                '''
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'ec2-server',
+                            transfers: [
+                                sshTransfer(
+                                    sourceFiles: 'build/**',
+                                    removePrefix: 'build',
+                                    remoteDirectory: '/home/ec2-user/build',
+                                    execCommand: '''
+sudo mkdir -p /usr/share/nginx/html
+sudo cp -r /home/ec2-user/build/* /usr/share/nginx/html/
+sudo systemctl restart nginx
+'''
+                                )
+                            ]
+                        )
+                    ]
+                )
             }
         }
     }
