@@ -4,7 +4,7 @@ pipeline {
     environment {
         BUCKET_NAME = 'hunhunhun'
         AWS_REGION = 'ap-southeast-2'
-        EC2_HOST = '3.27.173.54'
+        EC2_HOST = '3.27.78.113'
     }
 
     stages {
@@ -51,13 +51,11 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                bat '''
-                icacls C:\\jenkins-key\\Madhan.pem /inheritance:r
-                icacls C:\\jenkins-key\\Madhan.pem /grant:r "%USERNAME%:R"
-                icacls C:\\jenkins-key\\Madhan.pem /grant:r "SYSTEM:R"
-
-                ssh -i C:\\jenkins-key\\Madhan.pem -o StrictHostKeyChecking=no ec2-user@3.27.173.54 "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && mkdir -p /home/ec2-user/app && tar -xzf /home/ec2-user/build.tar.gz -C /home/ec2-user/app && sudo cp -r /home/ec2-user/app/build/* /usr/share/nginx/html/ && sudo systemctl restart nginx"
-                '''
+                sshagent(['ec2-ssh-key']) {
+                    bat '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@3.27.78.113 "aws s3 cp s3://hunhunhun/build.tar.gz /home/ec2-user/build.tar.gz --region ap-southeast-2 && mkdir -p /home/ec2-user/app && tar -xzf /home/ec2-user/build.tar.gz -C /home/ec2-user/app && sudo cp -r /home/ec2-user/app/build/* /usr/share/nginx/html/ && sudo systemctl restart nginx"
+                    '''
+                }
             }
         }
     }
